@@ -122,23 +122,23 @@ int main() {
         player.update();
         // camera
 
-        // TODO: Remove this line and replace it with code that determines if the player's (center)
-        // is between the two green lines (open space), in the soft exclusion zones (between the
-        // green and red lines), or in the hard exclusion zones (beyond either of the red lines).
-        //
-        // If the player is in the open zone, the camera does not need to move.
-        //
-        // If the player is in the soft exclusion zones, the camera should softly translate over
-        // multiple frames (via an exponential moving average) until the player's center is aligned
-        // with the violated soft boundary. Use SOFT_CAMERA_ALPHA for the alpha value.
-        //
-        // If the player is in the hard exclusion zones, the camera should hard-adjust so that
-        // the player's center is always kept at most *at* the red lines. This means that the
-        // player center must NEVER pass the red lines.
-        //
-        // Use SOFT_LIMIT_PERCENT and HARD_LIMIT_PERCENT to parameterize the green and red
-        // line positions.
-        camera.setCameraCenter({player.position.x, WINDOW_HEIGHT * 0.5f});
+        const float playerScreenX = camera.worldToWindowPercent(player.position).x;
+        const float leftHard = HARD_LIMIT_PERCENT;         // red 1/5
+        const float leftSoft = SOFT_LIMIT_PERCENT;         // green 1/3
+        const float rightSoft = 1.f - SOFT_LIMIT_PERCENT;  // green 2/3
+        const float rightHard = 1.f - HARD_LIMIT_PERCENT;  // red 4/5
+
+        if (playerScreenX < leftHard) {
+            // player is past the hard left limit, move camera to put player on the red line
+            camera.translateWindowPercent({playerScreenX - leftHard, 0.f});
+        } else if (playerScreenX > rightHard) {
+            camera.translateWindowPercent({playerScreenX - rightHard, 0.f});
+        } else if (playerScreenX < leftSoft) {
+            // player is past the soft left limit, move camera to put player on the green line
+            camera.translateWindowPercent({SOFT_CAMERA_ALPHA * (playerScreenX - leftSoft), 0.f});
+        } else if (playerScreenX > rightSoft) {
+            camera.translateWindowPercent({SOFT_CAMERA_ALPHA * (playerScreenX - rightSoft), 0.f});
+        }
 
         worldView.setCenter(camera.getCameraCenter());
         window.clear(sf::Color::Black);
